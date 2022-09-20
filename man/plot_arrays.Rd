@@ -7,9 +7,9 @@
 plot_arrays(
   group,
   cdist = 0.1,
-  palette =
-    "a6cee3,1f78b4,b2df8a,33a02c,fb9a99,e31a1c,fdbf6f,ff7f00,cab2d6,6a3d9a,ffff99,b15928",
-  plot_logo = TRUE
+  palette = default_palette,
+  plot_logo = TRUE,
+  number_spacers = FALSE
 )
 }
 \arguments{
@@ -18,9 +18,12 @@ plot_arrays(
 \item{cdist}{A numeric scalar in [0,1] representing a proportion of the maximum Levenshtein distance
 for a set of spacers. Default = 0.1.}
 
-\item{palette}{A string of hexadecimal color codes used distinguish unique spacers.}
+\item{palette}{A vector of hexadecimal color codes used to distinguish unique spacers.
+Default = default_palette, which is equivalent to grDevices::palette.colors(palette = "Polychrome 36")[-c(1:2)]}
 
 \item{plot_logo}{If FALSE, do not plot the repeat sequence logo. Default = TRUE.}
+
+\item{number_spacers}{If TRUE, include cluster number label in each spacer. Default = FALSE.}
 }
 \value{
 A plot comparing CRISPR arrays with a shared consensus repeat.

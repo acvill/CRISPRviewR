@@ -8,6 +8,7 @@
 #' @param data An object created with group_arrays().
 #' @return A tibble of CRISPR consensus repeats and the number of samples
 #' in which a repeat is identified.
+#' @import dplyr
 #' @export
 
 group_summary <- function(data) {

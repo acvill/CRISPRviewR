@@ -9,6 +9,13 @@
 #' @param txt Path to the minced .txt output
 #' @param gff Path to the minced .gff output
 #' @return A tibble containing the minced data
+#' @import dplyr
+#' @importFrom readr read_tsv
+#' @importFrom stringr str_replace
+#' @importFrom stringr str_detect
+#' @importFrom stringr str_trim
+#' @importFrom stringr str_remove
+#' @importFrom tidyr separate
 #' @export
 
 read_minced <- function(txt, gff) {

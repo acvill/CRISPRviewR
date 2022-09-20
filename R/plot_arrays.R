@@ -7,11 +7,28 @@
 #' @param group A subset of the object created by group_arrays() containing only a single consensus repeat.
 #' @param cdist A numeric scalar in [0,1] representing a proportion of the maximum Levenshtein distance
 #' for a set of spacers. Default = 0.1.
-#' @param palette A string of hexadecimal color codes used distinguish unique spacers.
+#' @param palette A vector of hexadecimal color codes used to distinguish unique spacers.
 #' Default = default_palette, which is equivalent to grDevices::palette.colors(palette = "Polychrome 36")[-c(1:2)]
 #' @param plot_logo If FALSE, do not plot the repeat sequence logo. Default = TRUE.
 #' @param number_spacers If TRUE, include cluster number label in each spacer. Default = FALSE.
 #' @return A plot comparing CRISPR arrays with a shared consensus repeat.
+#' @import dplyr
+#' @import ggplot2
+#' @importFrom S4Vectors isSingleNumber
+#' @importFrom Biostrings IUPAC_CODE_MAP
+#' @importFrom Biostrings DNA_BASES
+#' @importFrom Biostrings DNAStringSet
+#' @importFrom Biostrings stringDist
+#' @importFrom Biostrings pairwiseAlignment
+#' @importFrom Biostrings score
+#' @importFrom stats hclust
+#' @importFrom stats cutree
+#' @importFrom grDevices rgb
+#' @importFrom purrr map
+#' @importFrom tidyr unnest
+#' @importFrom ggnewscale new_scale_fill
+#' @importFrom ggseqlogo ggseqlogo
+#' @importFrom ggpubr ggarrange
 #' @export
 
 plot_arrays <- function(group,
@@ -31,7 +48,7 @@ plot_arrays <- function(group,
         stop("'match' and 'mismatch' must be non-missing numbers")
       }
       if (baseOnly) {
-        letters <- Biostrings::IUPAC_CODE_MAP[DNA_BASES]
+        letters <- Biostrings::IUPAC_CODE_MAP[Biostrings::DNA_BASES]
       }
       else {
         letters <- Biostrings::IUPAC_CODE_MAP

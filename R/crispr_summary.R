@@ -5,6 +5,7 @@
 #'
 #' @param data An object created with read_minced().
 #' @return A summary tibble.
+#' @import dplyr
 #' @export
 
 crispr_summary <- function(dat) {

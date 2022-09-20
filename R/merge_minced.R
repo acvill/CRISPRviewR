@@ -7,6 +7,9 @@
 #' @param ... One or more objects created with read_minced().
 #' @param names A vector of unique names  to label merged objects. If no names are given, the object names are used.
 #' @return A tibble containing the merged data.
+#' @importFrom tibble lst
+#' @importFrom stats setNames
+#' @importFrom dplyr bind_rows
 #' @export
 
 merge_minced <- function(..., names = NULL) {

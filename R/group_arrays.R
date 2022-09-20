@@ -7,6 +7,13 @@
 #'
 #' @param data A merged tibble dataset created with merge_minced().
 #' @return A tibble of CRISPR arrays grouped by repeat consensus sequence.
+#' @import dplyr
+#' @importFrom purrr as_vector
+#' @importFrom tidyr replace_na
+#' @importFrom Biostrings DNAStringSet
+#' @importFrom Biostrings consensusString
+#' @importFrom Biostrings DNAString
+#' @importFrom Biostrings reverseComplement
 #' @export
 
 group_arrays <- function(data) {
