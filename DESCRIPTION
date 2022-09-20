@@ -1,21 +1,19 @@
 Package: CRISPRviewR
-Type: Package
 Title: Parse MinCED data and visualize CRISPR arrays
 Version: 0.1.0
-Authors@R: person("Albert", "Vill", email = "albertcvill@gmail.com",
-  role = c("aut", "cre"))
+Authors@R: 
+    person("Albert", "Vill", email = "albertcvill@gmail.com",
+    role = c("aut", "cre"),
+    comment = c(ORCID = "0000-0001-5982-0298"))
 Description: 
     MinCED is a program to find Clustered Regularly Interspaced Short
     Palindromic Repeats (CRISPRs) in bacterial genomes or metagenomic contigs.
     The CRISPRviewR package includes functions to compare and visualize CRISPR
     arrays across MinCED outputs, like different strain genomes or time-course
-    metagenomic assemblies.
-    The general workflow involves reading in MinCED data with `read_minced()`,
-    merging datasets with `merge_minced()`, grouping arrays with
-    `group_arrays()`, and plotting array groups with `plot_arrays()`. 
+    metagenomic assemblies. The general workflow involves reading in MinCED
+    data with `read_minced()`, merging datasets with `merge_minced()`, grouping
+    arrays with `group_arrays()`, and plotting array groups with `plot_arrays()`.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
+Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
-Depends: 
-    R (>= 4.1.0)
