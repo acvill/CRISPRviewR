@@ -2,12 +2,12 @@
 % Please edit documentation in R/merge_minced.R
 \name{merge_minced}
 \alias{merge_minced}
-\title{merge read_minced() objects into a single tibble}
+\title{merge \code{\link{read_minced}} objects into a single tibble}
 \usage{
 merge_minced(..., names = NULL)
 }
 \arguments{
-\item{...}{One or more objects created with read_minced().}
+\item{...}{One or more objects created with \code{\link{read_minced}}.}
 
 \item{names}{A vector of unique names  to label merged objects. If no names are given, the object names are used.}
 }
@@ -15,7 +15,7 @@ merge_minced(..., names = NULL)
 A tibble containing the merged data.
 }
 \description{
-Given multiple objects from read_minced(), this function merges
+Given multiple objects from \code{\link{read_minced}}, this function merges
 them into a single tibble and creates an ID column from 'names'.
 If a vector of names is not supplied, the object names are used as labels.
 }

@@ -1,14 +1,12 @@
-#' Given a dataset created with group_arrays(), plot CRISPR arrays
+#' Given a set of grouped CRISPR arrays, plot them
 #'
-#' plot_arrays() generates a graphical
-#' representation of array sets associated by shared repeat consensus sequences
-#' (the output of group_arrays())
+#' generates a graphical representation of array sets associated by shared repeat consensus sequences
 #'
-#' @param group A subset of the object created by group_arrays() containing only a single consensus repeat.
-#' @param cdist A numeric scalar in [0,1] representing a proportion of the maximum Levenshtein distance
+#' @param group A subset of the object created by \code{\link{group_arrays}} containing only a single consensus repeat.
+#' @param cdist A numeric scalar in \code{[0,1]} representing a proportion of the maximum Levenshtein distance
 #' for a set of spacers. Default = 0.1.
 #' @param palette A vector of hexadecimal color codes used to distinguish unique spacers.
-#' Default = default_palette, which is equivalent to grDevices::palette.colors(palette = "Polychrome 36")[-c(1:2)]
+#' Default = default_palette, which is a subset of grDevices::palette.colors(palette = "Polychrome 36")
 #' @param plot_logo If FALSE, do not plot the repeat sequence logo. Default = TRUE.
 #' @param number_spacers If TRUE, include cluster number label in each spacer. Default = FALSE.
 #' @return A plot comparing CRISPR arrays with a shared consensus repeat.

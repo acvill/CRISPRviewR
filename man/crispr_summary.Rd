@@ -4,15 +4,15 @@
 \alias{crispr_summary}
 \title{summarize CRISPR arrays}
 \usage{
-crispr_summary(dat)
+crispr_summary(data)
 }
 \arguments{
-\item{data}{An object created with read_minced().}
+\item{data}{An object created with \code{\link{read_minced}}.}
 }
 \value{
 A summary tibble.
 }
 \description{
-Given an object created with read_minced(), this function
+Given an object created with \code{\link{read_minced}}, this function
 gives the length and number of spacers in each CRISPR array.
 }

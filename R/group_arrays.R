@@ -1,11 +1,11 @@
-#' group CRISPR arrays from a merge_minced() object by repeat similarity
+#' group CRISPR arrays from a \code{\link{merge_minced}} object by repeat similarity
 #'
-#' Given a dataset created with merged_minced(), this function attempts to
+#' Given a dataset created with \code{\link{merge_minced}}, this function attempts to
 #' identify CRISPR arrays across individual profiles / samples that have identical
 #' repeat consensus sequences. As the assembly orientation of a CRISPR array
 #' may be different across samples, this function compares reverse complements, too.
 #'
-#' @param data A merged tibble dataset created with merge_minced().
+#' @param data A merged tibble dataset created with \code{\link{merge_minced}}.
 #' @return A tibble of CRISPR arrays grouped by repeat consensus sequence.
 #' @import dplyr
 #' @importFrom purrr as_vector
