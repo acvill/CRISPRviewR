@@ -3,10 +3,10 @@
 #' generates a graphical representation of array sets associated by shared repeat consensus sequences
 #'
 #' @param group A subset of the object created by \code{\link{group_arrays}} containing only a single consensus repeat.
+#' @param palette A vector of hexadecimal color codes used to distinguish unique spacers.
+#' Default is \code{grDevices::palette.colors(palette = "Polychrome 36")[-c(1:2)]}.
 #' @param cdist A numeric scalar in \code{[0,1]} representing a proportion of the maximum Levenshtein distance
 #' for a set of spacers. Default = 0.1.
-#' @param palette A vector of hexadecimal color codes used to distinguish unique spacers.
-#' Default = default_palette, which is a subset of grDevices::palette.colors(palette = "Polychrome 36")
 #' @param plot_logo If FALSE, do not plot the repeat sequence logo. Default = TRUE.
 #' @param number_spacers If TRUE, include cluster number label in each spacer. Default = FALSE.
 #' @return A plot comparing CRISPR arrays with a shared consensus repeat.
@@ -30,8 +30,8 @@
 #' @export
 
 plot_arrays <- function(group,
+                        palette = NULL,
                         cdist = 0.1,
-                        palette = default_palette,
                         plot_logo = TRUE,
                         number_spacers = FALSE) {
 
@@ -115,9 +115,24 @@ plot_arrays <- function(group,
                   r_color, rep2con_sim)
 
   # get palette for spacers
+  ## if no palette given, generate default
   nclusters <- group$cluster |> na.omit() |> max()
-  newpal <- palette |>
-    {\(x) rep_len(x, nclusters)}()
+  if (is.null(palette)) {
+    default_palette <- c("#F6222E","#FE00FA","#16FF32","#3283FE",
+                         "#FEAF16","#B00068","#1CFFCE","#90AD1C",
+                         "#2ED9FF","#DEA0FD","#AA0DFE","#F8A19F",
+                         "#325A9B","#C4451C","#1C8356","#85660D",
+                         "#B10DA1","#FBE426","#1CBE4F","#FA0087",
+                         "#FC1CBF","#F7E1A0","#C075A6","#782AB6",
+                         "#AAF400","#BDCDFF","#822E1C","#B5EFB5",
+                         "#7ED7D1","#1C7F93","#D85FF7","#683B79",
+                         "#66B0FF","#3B00FB")
+    newpal <- default_palette |>
+      {\(x) rep_len(x, nclusters)}()
+  } else {
+    newpal <- palette |>
+      {\(x) rep_len(x, nclusters)}()
+  }
 
   # number samples and spacers for plotting order
   group <- dplyr::left_join(group,

@@ -6,8 +6,8 @@
 \usage{
 plot_arrays(
   group,
+  palette = NULL,
   cdist = 0.1,
-  palette = default_palette,
   plot_logo = TRUE,
   number_spacers = FALSE
 )
@@ -15,11 +15,11 @@ plot_arrays(
 \arguments{
 \item{group}{A subset of the object created by \code{\link{group_arrays}} containing only a single consensus repeat.}
 
+\item{palette}{A vector of hexadecimal color codes used to distinguish unique spacers.
+Default is \code{grDevices::palette.colors(palette = "Polychrome 36")[-c(1:2)]}.}
+
 \item{cdist}{A numeric scalar in \code{[0,1]} representing a proportion of the maximum Levenshtein distance
 for a set of spacers. Default = 0.1.}
-
-\item{palette}{A vector of hexadecimal color codes used to distinguish unique spacers.
-Default = default_palette, which is a subset of grDevices::palette.colors(palette = "Polychrome 36")}
 
 \item{plot_logo}{If FALSE, do not plot the repeat sequence logo. Default = TRUE.}
 
