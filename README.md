@@ -16,9 +16,9 @@ Future versions will be available on CRAN or Bioconductor. For now, you can inst
 devtools::install_github("acvill/CRISPRviewR")
 ```
 
-## Example workflow
+## Example
 
- 
+Check out the [CRISPRviewR vignette](https://albertvill.com/CRISPRviewR-vignette.html) for a suggested workflow.
 
 ## *Caveat emptor*
 
@@ -46,7 +46,7 @@ In that regard, users of CRISPRviewR should be aware of the following possibilit
 7 NA 
 ```
 
-## Notes
+## Bugs and notes
 
 - CRISPRviewR has only been tested with the output from minCED v0.4.2
-- future implementations will be submitted to CRAN or Bioconductor after I handle some [annoying notes](https://stackoverflow.com/q/9439256/7976890) from `R CMD check`
+- If you find a bug or want to suggest a new feature, please [open and issue](https://github.com/acvill/CRISPRviewR/issues/new/choose).
