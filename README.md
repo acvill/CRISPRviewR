@@ -5,9 +5,16 @@
 
 ## Background
 
-This package uses the output from minCED to associate, compare, and visualize CRISPR arrays across environmental samples. To get a sense for the shape of minCED data, check out the [example files](https://github.com/acvill/CRISPRviewR/tree/master/example_data_minced).  
+CRISPRviewR uses the output from minCED to associate, compare, and visualize CRISPR arrays across environmental samples. To get a sense for the shape of minCED data, check out the [example files](https://github.com/acvill/CRISPRviewR/tree/master/example_data_minced).  
 
 [![ctSkennerton/minced - GitHub](https://gh-card.dev/repos/ctSkennerton/minced.svg)](https://github.com/ctSkennerton/minced)
+
+This package relies on the functions of other packages for data cleaning and plotting, including the following:
+- dplyr, ggplot2, and other components of the [tidyverse](https://www.tidyverse.org/)
+- [Biostrings](https://bioconductor.org/packages/release/bioc/html/Biostrings.html)
+- [ggpubr](https://github.com/kassambara/ggpubr)
+- [ggnewscale](https://github.com/eliocamp/ggnewscale)
+- [ggseqlogo](https://github.com/omarwagih/ggseqlogo)
 
 ## Installation
 
@@ -18,7 +25,7 @@ devtools::install_github("acvill/CRISPRviewR")
 
 ## Example
 
-Check out the [CRISPRviewR vignette](https://albertvill.com/CRISPRviewR-vignette.html) for a suggested workflow.
+Please see the [CRISPRviewR vignette](https://albertvill.com/CRISPRviewR-vignette.html) for a suggested workflow.
 
 ## *Caveat emptor*
 
