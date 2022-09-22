@@ -1,7 +1,7 @@
 
 
 # CRISPRviewR: an R package for visualizing CRISPRs across environmental datasets
-![CRISPRviewR example output](https://user-images.githubusercontent.com/22378512/191805950-8c40f366-4481-4191-b03f-e5b3d82331cb.svg)
+![CRISPR23_oralmicrobiomes_bgwhite_preview4](https://user-images.githubusercontent.com/22378512/191869097-bb613183-6300-4975-b08a-f254b0411a11.png)
 
 ## Background
 
