@@ -1,0 +1,143 @@
+---
+title: "CRISPRviewR-vignette"
+author: Albert C. Vill
+date: 21 September 2022
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{CRISPRviewR-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4,
+  fig.align = 'center'
+)
+```
+
+```{r setup}
+library(CRISPRviewR)
+```
+
+## Read in and merge minCED data
+
+Process file pairs and merge the objects into a single dataset.
+```{r, eval=FALSE, message=FALSE, warning=FALSE}
+baseurl <- "https://raw.githubusercontent.com/acvill/CRISPRviewR/master/example_data_minced/"
+
+merged <- merge_minced(
+  s1 = read_minced(txt = url(paste0(baseurl, "s1.txt")),
+                   gff = url(paste0(baseurl, "s1.gff"))),
+  s2 = read_minced(txt = url(paste0(baseurl, "s2.txt")),
+                   gff = url(paste0(baseurl, "s2.gff"))),
+  s3 = read_minced(txt = url(paste0(baseurl, "s3.txt")),
+                   gff = url(paste0(baseurl, "s3.gff"))),
+  s4 = read_minced(txt = url(paste0(baseurl, "s4.txt")),
+                   gff = url(paste0(baseurl, "s4.gff"))),
+  s5 = read_minced(txt = url(paste0(baseurl, "s5.txt")),
+                   gff = url(paste0(baseurl, "s5.gff")))
+  )
+```
+```{r, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE}
+basedir <- "/Users/acvill/Dropbox/Github/CRISPRviewR/example_data_minced/"
+
+merged <- merge_minced(
+  s1 = read_minced(txt = paste0(basedir, "s1.txt"),
+                   gff = paste0(basedir, "s1.gff")),
+  s2 = read_minced(txt = paste0(basedir, "s2.txt"),
+                   gff = paste0(basedir, "s2.gff")),
+  s3 = read_minced(txt = paste0(basedir, "s3.txt"),
+                   gff = paste0(basedir, "s3.gff")),
+  s4 = read_minced(txt = paste0(basedir, "s4.txt"),
+                   gff = paste0(basedir, "s4.gff")),
+  s5 = read_minced(txt = paste0(basedir, "s5.txt"),
+                   gff = paste0(basedir, "s5.gff"))
+  )
+```
+
+Inspect a subset of the data. Note that running `crispr_summary()` on the full
+`merged` object may give a spurious output as `array` labels are repeated 
+across samples.
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+crispr_summary(merged |> dplyr::filter(id == "s1"))
+```
+
+## Group CRISPR arrays by shared repeats
+
+The `group_arrays()` function determines a consensus repeat for each array,
+then associates arrays with identical consensus sequences.
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+groups <- group_arrays(merged)
+group_summary(groups)
+```
+
+Groups that are represented across all of the samples may be interesting to plot. Let's get the labels for those groups.
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+group_summary(groups) |>
+  dplyr::filter(sample_count == length(unique(merged$id))) |>
+  dplyr::select(repcon_grp) |>
+  as.vector()
+```
+
+## Plot CRISPR arrays
+
+Given a `repcon_grp` number selected from `group_summary()`,
+you can subset your grouped data to plot arrays with a shared repeat.
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+plot_arrays(group = dplyr::filter(groups, repcon_grp == 116))
+```
+
+Now we see the utility of this package! By comparing CRISPR arrays with shared
+repeat sequences, we observe that an array resident in sample `s3` lacks the
+spacer diversity of the arrays seen in the other samples. **Before interpreting 
+these plots as representative of biological truth, be sure to review the [list
+of caveats](https://github.com/acvill/CRISPRviewR#caveat-emptor).**
+
+By default, a sequence logo representing the repeat consensus is plotted below
+the arrays. This can be toggled with the `plot_logo` switch.
+```{r, eval=TRUE, message=FALSE, warning=FALSE, fig.height=3}
+plot_arrays(group = dplyr::filter(groups, repcon_grp == 116),
+            plot_logo = FALSE)
+```
+
+To better differentiate spacers, cluster numbers can be added with the
+`number_spacers` option.
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+plot_arrays(group = dplyr::filter(groups, repcon_grp == 116),
+            number_spacers = TRUE)
+```
+
+Spacer clustering is controlled by the `cdist` parameter, which represents a
+proportion of the maximum pairwise [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance)
+for the set of spacers associated with a consensus repeat sequence. The default
+value is 0.1. Decreasing this value creates more spacer clusters, and increasing
+this value reduces the number of clusters.
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+plot_arrays(group = dplyr::filter(groups, repcon_grp == 116),
+            cdist = 0.5, number_spacers = TRUE)
+```
+
+The default palette used by `plot_arrays()` has 34 colors. Custom palettes
+can be specified with the `palette` parameter. If a palette has fewer colors
+than there are spacer clusters in the array group, colors are recycled, and 
+`number_spacers = TRUE` should be specified.
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+alt_palette <- c("#7FC97F","#BEAED4","#FDC086","#FFFF99",
+                 "#386CB0","#F0027F","#BF5B17","#666666")
+plot_arrays(group = dplyr::filter(groups, repcon_grp == 116),
+            palette = alt_palette, number_spacers = TRUE)
+```
+
+When a single sample has more than one array with the same consensus repeat
+sequence, as in the case when one CRISPR array is split across multiple contigs,
+the arrays are plotted side-by-side with gaps.
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE, fig.height=1.5}
+plot_arrays(group = dplyr::filter(groups, repcon_grp == 66),
+            plot_logo = FALSE)
+```
+
