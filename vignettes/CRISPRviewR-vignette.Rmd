@@ -2,6 +2,7 @@
 title: "CRISPRviewR-vignette"
 author: Albert C. Vill
 date: 21 September 2022
+website: https://github.com/acvill/CRISPRviewR
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{CRISPRviewR-vignette}
@@ -68,7 +69,7 @@ crispr_summary(merged |> dplyr::filter(id == "s1"))
 
 ## Group CRISPR arrays by shared repeats
 
-The `group_arrays()` function determines a consensus repeat for each array,
+The `group_arrays()` function determines a consensus repeat (`repcon``) for each array,
 then associates arrays with identical consensus sequences.
 ```{r, eval=TRUE, message=FALSE, warning=FALSE}
 groups <- group_arrays(merged)
@@ -104,6 +105,8 @@ plot_arrays(group = dplyr::filter(groups, repcon_grp == 116),
             plot_logo = FALSE)
 ```
 
+
+
 To better differentiate spacers, cluster numbers can be added with the
 `number_spacers` option.
 ```{r, eval=TRUE, message=FALSE, warning=FALSE}
@@ -136,8 +139,7 @@ When a single sample has more than one array with the same consensus repeat
 sequence, as in the case when one CRISPR array is split across multiple contigs,
 the arrays are plotted side-by-side with gaps.
 
-```{r, eval=TRUE, message=FALSE, warning=FALSE, fig.height=1.5}
-plot_arrays(group = dplyr::filter(groups, repcon_grp == 66),
-            plot_logo = FALSE)
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+plot_arrays(group = dplyr::filter(groups, repcon_grp == 268))
 ```
 
