@@ -1,8 +1,12 @@
 
 
-# CRISPRviewR [[under construction]]
+# CRISPRviewR: an R package for visualizing CRISPRs across environmental datasets
+![CRISPRviewR example output](https://user-images.githubusercontent.com/22378512/191805950-8c40f366-4481-4191-b03f-e5b3d82331cb.svg)
 
-#### An R package for parsing and visualizing minCED output
+## Background
+
+This package uses the output from minCED to associate, compare, and visualize CRISPR arrays across environmental samples. To get a sense for the shape of minCED data, check out the [example files](https://github.com/acvill/CRISPRviewR/tree/master/example_data_minced).  
+
 [![ctSkennerton/minced - GitHub](https://gh-card.dev/repos/ctSkennerton/minced.svg)](https://github.com/ctSkennerton/minced)
 
 ## Installation
@@ -13,6 +17,7 @@ devtools::install_github("acvill/CRISPRviewR")
 ```
 
 ## Example workflow
+
  
 
 ## *Caveat emptor*
