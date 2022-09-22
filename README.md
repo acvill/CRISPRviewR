@@ -56,4 +56,4 @@ In that regard, users of CRISPRviewR should be aware of the following possibilit
 ## Bugs and notes
 
 - CRISPRviewR has only been tested with the output from minCED v0.4.2
-- If you find a bug or want to suggest a new feature, please [open and issue](https://github.com/acvill/CRISPRviewR/issues/new/choose) or [open a pull request](https://github.com/acvill/CRISPRviewR/pulls).
+- If you find a bug or want to suggest a new feature, please [open an issue](https://github.com/acvill/CRISPRviewR/issues/new/choose) or [make a pull request](https://github.com/acvill/CRISPRviewR/pulls).
