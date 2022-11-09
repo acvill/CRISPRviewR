@@ -22,6 +22,7 @@ Future versions will be available on CRAN or Bioconductor. For now, you can inst
 ```
 devtools::install_github("acvill/CRISPRviewR")
 ```
+RStudio users may have to run RStudio with administrator privileges for the devtools installation to work. 
 
 ## Example
 
