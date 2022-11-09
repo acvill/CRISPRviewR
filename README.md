@@ -1,13 +1,20 @@
 
 
 # CRISPRviewR: an R package for visualizing CRISPRs across environmental datasets
-![CRISPRviewR example output](https://user-images.githubusercontent.com/22378512/191805950-8c40f366-4481-4191-b03f-e5b3d82331cb.svg)
+![CRISPR23_oralmicrobiomes_bgwhite_preview5](https://user-images.githubusercontent.com/22378512/191869238-e5017670-13a2-4eb5-9160-bf9cb1bb9327.png)
 
 ## Background
 
-This package uses the output from minCED to associate, compare, and visualize CRISPR arrays across environmental samples. To get a sense for the shape of minCED data, check out the [example files](https://github.com/acvill/CRISPRviewR/tree/master/example_data_minced).  
+CRISPRviewR uses the output from minCED to associate, compare, and visualize CRISPR arrays across environmental samples. To get a sense for the shape of minCED data, check out the [example files](https://github.com/acvill/CRISPRviewR/tree/master/example_data_minced).  
 
 [![ctSkennerton/minced - GitHub](https://gh-card.dev/repos/ctSkennerton/minced.svg)](https://github.com/ctSkennerton/minced)
+
+This package relies on the functions of other packages for data cleaning and plotting, including the following:
+- dplyr, ggplot2, and other components of the [tidyverse](https://www.tidyverse.org/)
+- [Biostrings](https://bioconductor.org/packages/release/bioc/html/Biostrings.html)
+- [ggpubr](https://github.com/kassambara/ggpubr)
+- [ggnewscale](https://github.com/eliocamp/ggnewscale)
+- [ggseqlogo](https://github.com/omarwagih/ggseqlogo)
 
 ## Installation
 
@@ -16,9 +23,9 @@ Future versions will be available on CRAN or Bioconductor. For now, you can inst
 devtools::install_github("acvill/CRISPRviewR")
 ```
 
-## Example workflow
+## Example
 
- 
+Please see the [CRISPRviewR vignette](https://albertvill.com/CRISPRviewR-vignette.html) for a suggested workflow.
 
 ## *Caveat emptor*
 
@@ -46,7 +53,7 @@ In that regard, users of CRISPRviewR should be aware of the following possibilit
 7 NA 
 ```
 
-## Notes
+## Bugs and notes
 
 - CRISPRviewR has only been tested with the output from minCED v0.4.2
-- future implementations will be submitted to CRAN or Bioconductor after I handle some [annoying notes](https://stackoverflow.com/q/9439256/7976890) from `R CMD check`
+- If you find a bug or want to suggest a new feature, please [open an issue](https://github.com/acvill/CRISPRviewR/issues/new/choose) or [make a pull request](https://github.com/acvill/CRISPRviewR/pulls).
