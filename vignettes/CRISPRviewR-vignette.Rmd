@@ -1,7 +1,7 @@
 ---
 title: "CRISPRviewR-vignette"
 author: Albert C. Vill
-date: 21 September 2022
+date: 7 November 2022
 website: https://github.com/acvill/CRISPRviewR
 output: rmarkdown::html_vignette
 vignette: >
@@ -20,10 +20,12 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+```{r, eval=FALSE}
 library(CRISPRviewR)
 ```
-
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+devtools::load_all()
+```
 ## Read in and merge minCED data
 
 Process file pairs and merge the objects into a single dataset.
@@ -67,6 +69,45 @@ across samples.
 crispr_summary(merged |> dplyr::filter(id == "s1"))
 ```
 
+## Fix truncated repeats
+
+minCED relies on CRISPR Recognition Tool (CRT) to detect CRISPR repeats. The CRT
+algorithm [requires repeats to be identical](https://github.com/ctSkennerton/minced/issues/36),
+and this stringency can lead to the misassignment of portions of repeat sequences to spacers.
+See, for example, the first array of sample `s1`.
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+merged |>
+  dplyr::filter(id == "s1" & array == "CRISPR1") |>
+  dplyr::select(rep, spacer)
+```
+
+Note the similarity of the first 16 nt of each spacer.
+If `fix_repeats = TRUE` is specified, `read_minced()` will attempt to reassign
+portions of spacers to repeats by calculating rolling average conservation scores
+across spacer consensus sequences representing both possible array orientations.
+Reading from the left end of the conservation score vector, a new spacer-repeat
+boundary is drawn at the position where the conservation score falls below the
+threshold value given by `cutoff`. When `cutoff = 0.7` (default), this method
+reliably reassigns more-similar-than-expected spacer substrings to their neighboring repeats.
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+baseurl <- "https://raw.githubusercontent.com/acvill/CRISPRviewR/master/example_data_minced/"
+read_minced(txt = url(paste0(baseurl, "s1.txt")),
+            gff = url(paste0(baseurl, "s1.gff")),
+            fix_repeats = TRUE) |>
+  dplyr::filter(array == "CRISPR1") |>
+  dplyr::select(rep, spacer)
+```
+
+Because we are only working with the sequence context of the arrays
+given in the minCED data, reassignment of spacer sequences to repeats means
+that one repeat at one end of the array will retain its original sequence.
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE, out.width="100%"}
+knitr::include_graphics(path = "/Users/acvill/Dropbox/Github/scratch/fix_repeats_truncated_white.svg")
+```
+
 ## Group CRISPR arrays by shared repeats
 
 The `group_arrays()` function determines a consensus repeat (`repcon``) for each array,
@@ -104,8 +145,6 @@ the arrays. This can be toggled with the `plot_logo` switch.
 plot_arrays(group = dplyr::filter(groups, repcon_grp == 116),
             plot_logo = FALSE)
 ```
-
-
 
 To better differentiate spacers, cluster numbers can be added with the
 `number_spacers` option.

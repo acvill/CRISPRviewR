@@ -1,6 +1,6 @@
 Package: CRISPRviewR
 Title: Parse MinCED data and visualize CRISPR arrays
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: 
     person("Albert", "Vill", email = "albertcvill@gmail.com",
     role = c("aut", "cre"),
@@ -22,6 +22,7 @@ Depends:
 Imports: 
     Biostrings (>= 2.64),
     S4Vectors (>= 0.34), 
+    stats (>= 4.2),
     dplyr (>= 1.0),
     ggnewscale (>= 0.4),
     ggplot2 (>= 3.3),

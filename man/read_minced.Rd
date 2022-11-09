@@ -4,12 +4,23 @@
 \alias{read_minced}
 \title{Read and transform MinCED data}
 \usage{
-read_minced(txt, gff)
+read_minced(txt, gff, fix_repeats = FALSE, window = 2, cutoff = 0.7)
 }
 \arguments{
 \item{txt}{Path to the minced .txt output}
 
 \item{gff}{Path to the minced .gff output}
+
+\item{fix_repeats}{Attempts to resolve portions of repeats that were
+mistakenly assigned to spacers. Default = FALSE.
+(see https://github.com/ctSkennerton/minced/issues/36)}
+
+\item{window}{Nucleotide context in each direction
+used for the rolling average when fix_repeats = TRUE. Default = 2.}
+
+\item{cutoff}{Threshold value for rolling average conservation
+across repeats used to determine repeat-spacer break
+when fix_repeats = TRUE. Default = 0.7.}
 }
 \value{
 A tibble containing the minced data
