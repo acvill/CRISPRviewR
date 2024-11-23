@@ -1,0 +1,596 @@
+---
+title: "CRISPRviewR updated functions"
+author: "Albert Vill"
+date: "23 Nov 2024"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+# Version Information
+
+R               4.4.2
+BiocGenerics    0.52.0
+Biostrings      2.74.0
+ggpubr          0.6.0
+ggnewscale      0.5.0
+ggseqlogo       0.2
+grdevices       4.4.2
+pwalign         1.2.0
+S4Vectors       0.44.0
+tidyverse       2.0.0
+- dplyr           1.1.4
+- readr           2.1.5
+- stringr         1.5.1
+- ggplot2         3.5.1
+- tibble          3.2.1
+- tidyr           1.3.1
+- purrr           1.0.2
+
+# Udpated CRISPRviewR Functions
+## read_minced
+```{r}
+read_minced <- function(txt,
+                        gff,
+                        fix_repeats = FALSE,
+                        window = 2,
+                        cutoff = 0.7) {
+
+  ####################################################
+  ## helper functions related to fix_repeats option ##
+  ####################################################
+
+  # get average in rolling window
+  roll <- function(vector, window1) {
+    vc <- (Biostrings::consensusMatrix(vector)[1:4,]/(length(vector))) |>
+      t() |> apply(1, max)
+    vl <- length(vc)
+    sapply(seq_along(vc),
+           function(v, w, i) {
+             lt <- ifelse(i - w < 1, 1, i - w)
+             rt <- ifelse(i + w > vl, vl, i + w)
+             mean(v[lt:rt])
+           },
+           v = vc,
+           w = window1)
+  }
+
+  # reverse all strings in character vector
+  strReverse <- function(x) {
+    sapply(lapply(strsplit(x, NULL), rev), paste, collapse="")
+  }
+
+  checkSpacers <- function(dat, window2, cutoff1) {
+    # get unique array IDs
+    arrays <- dat |> dplyr::select(array) |>
+      unique() |> purrr::as_vector()
+    out <- dat
+    # loop through arrays if number of spacers >= 3 (+1 NA)
+    for (arr in arrays) {
+      if (nrow(dplyr::filter(dat, array == arr)) > 3) {
+        # get the rolling average conservation score for fwd orientation
+        spc_fwd <- dat |> dplyr::filter(array == arr) |>
+          dplyr::select(spacer) |> stats::na.omit() |>
+          purrr::as_vector() |> Biostrings::DNAStringSet() |>
+          roll(window1 = window2)
+        # get the rolling average conservation score for rev orientation
+        spc_rev <- dat |> dplyr::filter(array == arr) |>
+          dplyr::select(spacer) |> stats::na.omit() |>
+          purrr::as_vector() |> strReverse() |>
+          Biostrings::DNAStringSet() |>
+          roll(window1 = window2)
+        # read rolling average vectors from left
+        # when value falls below cutoff, record
+        ifwd <- 0
+        while (spc_fwd[ifwd+1] >= cutoff1) {
+          ifwd <- ifwd + 1
+        }
+        irev <- 0
+        while (spc_rev[irev+1] >= cutoff1) {
+          irev <- irev + 1
+        }
+        # if spacers have more conservation than expected (cutoff)
+        # then append conserved sequence to repeat sequence
+        if (ifwd > 0 & irev == 0) {
+          out <- out |>
+            dplyr::filter(array == arr) |>
+            dplyr::mutate(spacer = ifelse(test = is.na(spacer),
+                                          yes = "",
+                                          no = spacer)) |>
+            dplyr::mutate(rep = paste0(rep,
+                                       substr(x = spacer,
+                                              start = 1,
+                                              stop = ifwd)),
+                          spacer = substr(x = spacer,
+                                          start = ifwd + 1,
+                                          stop = nchar(spacer))) |>
+            dplyr::mutate(dplyr::across(dplyr::where(is.character), ~ dplyr::na_if(.x,""))) |>
+            dplyr::mutate(end = ifelse(test = is.na(spacer),
+                                       yes = end,
+                                       no = end + ifwd)) |>
+            rbind(out |> dplyr::filter(array != arr))
+        } else if (ifwd == 0 & irev > 0) {
+          out <- out |>
+            dplyr::filter(array == arr) |>
+            dplyr::mutate(spacer = dplyr::lag(spacer)) |>
+            dplyr::mutate(spacer = ifelse(is.na(spacer), "", spacer)) |>
+            dplyr::mutate(rep = paste0(substr(x = spacer,
+                                              start = nchar(spacer) - irev,
+                                              stop = nchar(spacer)),
+                                       rep),
+                          spacer = substr(x = spacer,
+                                          start = 1,
+                                          stop = nchar(spacer) - irev - 1)) |>
+            dplyr::mutate(dplyr::across(dplyr::where(is.character), ~ dplyr::na_if(.x,""))) |>
+            dplyr::mutate(start = ifelse(test = is.na(spacer),
+                                         yes = start ,
+                                         no = start - irev)) |>
+            dplyr::mutate(spacer = dplyr::lead(spacer)) |>
+            rbind(out |> dplyr::filter(array != arr))
+        }
+
+      }
+
+    }
+
+    out |> dplyr::arrange(as.numeric(gsub(x = array,
+                                          pattern = "CRISPR",
+                                          replacement = "")))
+
+  }
+
+  ####################################################
+
+  seqs <- readr::read_tsv(file = txt,
+                          col_names = "mess",
+                          comment = "--") |>
+    dplyr::filter(!grepl('POSITION', mess)) |>
+    dplyr::filter(!grepl('Repeats', mess)) |>
+    dplyr::mutate(mess = stringr::str_replace(mess, "CRISPR ", "CRISPR")) |>
+    dplyr::mutate(mess = stringr::str_replace(mess, "Range.*", "")) |>
+    dplyr::group_by(grp = cumsum(stringr::str_detect(mess, "CRISPR"))) |>
+    dplyr::mutate(array = dplyr::first(mess)) |>
+    dplyr::filter(!grepl('CRISPR', mess)) |>
+    dplyr::ungroup() |>
+    tidyr::separate(col = mess, remove = TRUE, sep = "\t", fill = "right",
+                    into = c("start","drop1","rep","spacer","drop2")) |>
+    dplyr::mutate(array = stringr::str_trim(array)) |>
+    dplyr::select(array, start, rep, spacer) |>
+    dplyr::mutate(start = as.character(start))
+
+  coords <- readr::read_tsv(file = gff,
+                            comment = "##",
+                            col_names = c("contig","drop1",
+                                          "drop2","start","end","drop3",
+                                          "drop4","drop5","parse")) |>
+    dplyr::select(!dplyr::contains("drop")) |>
+    dplyr::filter(!grepl("rpt_type", parse)) |>
+    tidyr::separate(col = parse, sep = ";",
+                    into = c("array","id"), remove = TRUE) |>
+    dplyr::mutate(array = stringr::str_remove(pattern = "Parent=",
+                                              string = array)) |>
+    dplyr::select(array, contig, start, end) |>
+    dplyr::mutate(start = as.character(start))
+
+  merged <- dplyr::left_join(seqs, coords, by = c("array", "start")) |>
+    dplyr::mutate(start = as.numeric(start)) |>
+    dplyr::select(array, rep, start, end, spacer, contig)
+
+  if (isTRUE(fix_repeats)) {
+
+    merged <- checkSpacers(dat = merged,
+                           window2 = window,
+                           cutoff1 = cutoff)
+
+  }
+
+  merged
+
+}
+```
+
+## merge_minced
+```{r}
+merge_minced <- function(..., names = NULL) {
+
+  mlist <- tibble::lst(...)
+  if (!is.null(names)) {
+    if (length(mlist) == length(names)) {
+      merged <- mlist |>
+        stats::setNames(nm = names) |>
+        dplyr::bind_rows(.id = 'id')
+    } else {
+      message("Error: names vector and object list have different lengths")
+    }
+  } else {
+    merged <- mlist |>
+      dplyr::bind_rows(.id = 'id')
+  }
+  merged
+
+}
+```
+
+## crispr_summary
+```{r}
+crispr_summary <- function(data) {
+
+  data |> dplyr::group_by(array) |>
+    dplyr::mutate(length = max(end) - min(start)) |>
+    dplyr::mutate(spacer_count = dplyr::n()) |>
+    dplyr::select(array, contig, length, spacer_count) |>
+    unique()
+
+}
+```
+
+## group_arrays
+```{r}
+group_arrays <- function(data) {
+
+  # helper functions to get consensus and reverse complement
+  consensus <- function(tib) {
+    purrr::as_vector(tib) |>
+      Biostrings::DNAStringSet() |>
+      Biostrings::consensusString()
+  }
+
+  consensus_revcomp <- function(tib) {
+    consensus(tib) |>
+      Biostrings::DNAString() |>
+      Biostrings::reverseComplement() |>
+      as.character()
+  }
+
+  # generate consensus for each sample + array group
+  # replace NA with characters in DNA_ALPHABET
+  # alphabetically compare rep_consensus and rep_consensus_revcomp, keep one
+  cdat <- data |>
+    dplyr::group_by(id, array) |>
+    dplyr::mutate(rep_consensus = consensus(rep)) |>
+    dplyr::mutate(rep_consensus_revcomp = consensus_revcomp(rep)) |>
+    tidyr::replace_na(list(spacer = ".....")) |>
+    dplyr::mutate(flip = dplyr::case_when(rep_consensus > rep_consensus_revcomp ~ "yes",
+                                          rep_consensus <= rep_consensus_revcomp ~ "no")) |>
+    dplyr::mutate(rep = ifelse(flip == "yes",
+                               yes = Biostrings::DNAStringSet(rep) |>
+                                 Biostrings::reverseComplement() |>
+                                 as.character(),
+                               no = rep)) |>
+    dplyr::mutate(spacer = ifelse(flip == "yes",
+                                  yes = Biostrings::DNAStringSet(spacer) |>
+                                    Biostrings::reverseComplement() |>
+                                    as.character(),
+                                  no = spacer)) |>
+    dplyr::mutate(repcon = ifelse(flip == "yes",
+                                  yes = rep_consensus_revcomp,
+                                  no = rep_consensus)) |>
+    dplyr::mutate(grp_order = ifelse(flip == "yes",
+                                     yes = as.integer(1 + dplyr::n() - dplyr::row_number()),
+                                     no = dplyr::row_number())) |>
+    dplyr::arrange(grp_order, .by_group = TRUE) |>
+    dplyr::mutate(spacer =
+                  if (dplyr::first(spacer) == ".....") {
+                    spacer[dplyr::row_number() %% dplyr::n() + 1]
+                  }
+                  else {
+                    spacer
+                  }) |>
+    dplyr::mutate(spacer = gsub(pattern = "\\.\\.\\.\\.\\.",
+                                replacement = NA,
+                                x = spacer)) |>
+    dplyr::ungroup() |>
+    dplyr::select(-c(rep_consensus, rep_consensus_revcomp)) |>
+    dplyr::arrange(repcon) |>
+    dplyr::group_by(repcon) |>
+    dplyr::mutate(repcon_grp = dplyr::cur_group_id()) |>
+    dplyr::ungroup() |>
+    dplyr::select(-c(flip, grp_order))
+
+  cdat
+
+}
+```
+
+## group_summary
+```{r}
+group_summary <- function(data) {
+
+  data |>
+    dplyr::select(repcon_grp, repcon, id) |>
+    unique() |>
+    dplyr::group_by(repcon_grp, repcon) |>
+    dplyr::summarise(id = list(id)) |>
+    dplyr::rename(sample_list = id) |>
+    dplyr::mutate(sample_count = lengths(sample_list)) |>
+    dplyr::arrange(desc(sample_count)) |>
+    dplyr::ungroup()
+
+}
+```
+
+## plot_arrays
+```{r}
+plot_arrays <- function(group,
+                        palette = NULL,
+                        cdist = 0.1,
+                        plot_logo = TRUE,
+                        number_spacers = FALSE) {
+
+  # helper function to create asymmetric nucleotide substitution matrix
+  # see https://github.com/Bioconductor/Biostrings/pull/77
+  asymNSM <- function(match = 1, mismatch = 0,
+                      baseOnly = FALSE, type = "DNA",
+                      symmetric = TRUE) {
+      "%safemult%" <- function(x, y) ifelse(is.infinite(x) & y == 0, 0, x * y)
+      type <- match.arg(type, c("DNA", "RNA"))
+      if (!S4Vectors::isSingleNumber(match) || !S4Vectors::isSingleNumber(mismatch)) {
+        stop("'match' and 'mismatch' must be non-missing numbers")
+      }
+      if (baseOnly) {
+        letters <- Biostrings::IUPAC_CODE_MAP[Biostrings::DNA_BASES]
+      }
+      else {
+        letters <- Biostrings::IUPAC_CODE_MAP
+      }
+      if (type == "RNA") {
+        names(letters) <- chartr("T", "U", names(letters))
+      }
+      nLetters <- length(letters)
+      splitLetters <- strsplit(letters, split = "")
+      submat <- matrix(0, nrow = nLetters, ncol = nLetters, dimnames = list(names(letters), names(letters)))
+      if (symmetric) {
+        for (i in 1:nLetters) {
+          for (j in i:nLetters) {
+            submat[i,j] <- submat[j,i] <- base::mean(outer(splitLetters[[i]], splitLetters[[j]], "=="))
+          }
+        }
+      }
+      else {
+        for (i in 1:nLetters) {
+          for (j in i:nLetters) {
+            submat[i,j] <- base::mean(outer(splitLetters[[i]], splitLetters[[j]], "%in%"))
+            submat[j,i] <- base::mean(outer(splitLetters[[j]], splitLetters[[i]], "%in%"))
+          }
+        }
+      }
+      abs(match) * submat - abs(mismatch) %safemult% (1 - submat)
+    }
+
+  # if adjusted pairwise levenshtein distance is less than cutoff ratio,
+  # put spacers in same cluster
+  uniq_spacers <- unique(na.omit(group$spacer))
+  min_sp_len <- min(nchar(uniq_spacers))
+  repcon_len <- nchar(unique(group$repcon))
+  dmat <- uniq_spacers |>
+    Biostrings::DNAStringSet() |>
+    Biostrings::stringDist(method = "levenshtein") / min_sp_len
+  clusters <- data.frame(spacer = uniq_spacers,
+                         cluster = stats::hclust(dmat, method = "complete") |>
+                           stats::cutree(h = cdist))
+  group <- dplyr::left_join(group, clusters)
+
+  # get distance of each repeat to the consensus
+  subst <- asymNSM()
+
+  ## can't use asymmetric matrix with stringDist, use pairwiseAlignment instead
+  group <- dplyr::mutate(group,
+                         rep_dist = Biostrings::pairwiseAlignment(pattern = rep,
+                                                                  subject = repcon,
+                                                                  substitutionMatrix = subst) |>
+                           BiocGenerics::score() |> abs()
+                         ) |>
+    dplyr::mutate(rep2con_sim = (rep_dist / nchar(repcon)) |> round(digits = 2))
+
+  # get grayscale color for repeat, based on similarity to consensus repeat
+  ## uses 0.75 similarity as floor, unless lowest similarity < 0.75, then use that
+  minsim <- min(group$rep2con_sim)
+  if (minsim < 0.75) {
+    floor_ <- minsim
+  } else {
+    floor_ <- 0.75
+  }
+
+  group <- dplyr::mutate(group, temp = (1 - rep2con_sim) / (1 - floor_)) |>
+    dplyr::mutate(r_color = grDevices::rgb(temp,temp,temp)) |>
+    dplyr::select(id, rep, spacer, cluster,
+                  r_color, rep2con_sim)
+
+  # get palette for spacers
+  ## if no palette given, generate default
+  nclusters <- group$cluster |> na.omit() |> max()
+  if (is.null(palette)) {
+    default_palette <- c("#F6222E","#FE00FA","#16FF32","#3283FE",
+                         "#FEAF16","#B00068","#1CFFCE","#90AD1C",
+                         "#2ED9FF","#DEA0FD","#AA0DFE","#F8A19F",
+                         "#325A9B","#C4451C","#1C8356","#85660D",
+                         "#B10DA1","#FBE426","#1CBE4F","#FA0087",
+                         "#FC1CBF","#F7E1A0","#C075A6","#782AB6",
+                         "#AAF400","#BDCDFF","#822E1C","#B5EFB5",
+                         "#7ED7D1","#1C7F93","#D85FF7","#683B79",
+                         "#66B0FF","#3B00FB")
+    newpal <- default_palette |>
+      {\(x) rep_len(x, nclusters)}()
+  } else {
+    newpal <- palette |>
+      {\(x) rep_len(x, nclusters)}()
+  }
+
+  # number samples and spacers for plotting order
+  group <- dplyr::left_join(group,
+                            data.frame(id = group$id |> unique(),
+                                       y_order = seq(1:length(group$id |> unique())))) |>
+    dplyr::group_by(id) |>
+    dplyr::mutate(x_order = seq(1:dplyr::n())) |>
+    dplyr::ungroup()
+
+  # generate x and y coords for repeats and spacers
+  ymax <- max(group$y_order)
+  group <- group |>
+    dplyr::mutate(xfactor = (2 * x_order) - 1) |>
+    dplyr::mutate(yfactor = (ymax - y_order) + 1) |>
+    dplyr::mutate(xrep = purrr::map(base::strsplit(paste(xfactor,
+                                                  xfactor + 0.5,
+                                                  xfactor,
+                                                  xfactor - 0.5,
+                                                  sep = ","),
+                                            split = ","),
+                             as.numeric)) |>
+    dplyr::mutate(yrep = purrr::map(base::strsplit(paste(yfactor + 0.4,
+                                                  yfactor,
+                                                  yfactor - 0.4,
+                                                  yfactor,
+                                                  sep = ","),
+                                            split = ","),
+                              as.numeric)) |>
+    dplyr::mutate(xspa = purrr::map(base::strsplit(paste(xfactor + 1.5,
+                                                  xfactor + 1.5,
+                                                  xfactor + 0.5,
+                                                  xfactor + 0.5,
+                                                  sep = ","),
+                                            split = ","),
+                              as.numeric)) |>
+    dplyr::mutate(yspa = purrr::map(base::strsplit(paste(yfactor + 0.4,
+                                                  yfactor - 0.4,
+                                                  yfactor - 0.4,
+                                                  yfactor + 0.4,
+                                                  sep = ","),
+                                            split = ","),
+                              as.numeric)) |>
+    tidyr::unnest(c(xrep,yrep,xspa,yspa)) |>
+    dplyr::group_by(x_order, y_order) |>
+    dplyr::mutate(plot_id = dplyr::cur_group_id()) |>
+    dplyr::ungroup() |>
+    dplyr::mutate(xspa = ifelse(is.na(spacer), NA, xspa),
+                  yspa = ifelse(is.na(spacer), NA, yspa),
+                  xfactor = ifelse(is.na(spacer), NA, xfactor),
+                  yfactor = ifelse(is.na(spacer), NA, yfactor))
+
+  pcr <- ggplot2::ggplot(group) +
+    ggplot2::geom_polygon(mapping = ggplot2::aes(x = xspa,
+                                                 y = yspa,
+                                                 group = plot_id,
+                                                 fill = as.character(cluster)),
+                          color = "black") +
+    ggplot2::scale_fill_manual(values = newpal,
+                               guide = "none") +
+    {if (isTRUE(number_spacers)) {list(
+      ggplot2::geom_point(mapping = ggplot2::aes(x = xfactor + 1,
+                                                 y = yfactor),
+                          size = 7,
+                          pch = 19,
+                          fill = "black"),
+      ggplot2::geom_text(mapping = ggplot2::aes(x = xfactor + 1,
+                                                y = yfactor,
+                                                label = as.character(cluster)),
+                         check_overlap = TRUE,
+                         size = 4,
+                         color = "white")
+      )}} +
+    ggnewscale::new_scale_fill() +
+    ggplot2::geom_polygon(mapping = ggplot2::aes(x = xrep,
+                                                 y = yrep,
+                                                 group = plot_id,
+                                                 fill = rep2con_sim),
+                          color = "black") +
+    ggplot2::scale_fill_gradient(low = '#FFFFFF',
+                                 high = '#000000',
+                                 name = "similarity to \nrepeat consensus",
+                                 breaks = c(floor_, (1 + floor_)/2, 1),
+                                 labels = c(floor_, (1 + floor_)/2, 1),
+                                 limits = c(floor_, 1)) +
+    ggplot2::geom_text(mapping = ggplot2::aes(y = yfactor,
+                                              x = -0.5,
+                                              label = id),
+                       check_overlap = TRUE,
+                       size = 7,
+                       hjust = 1) +
+    ggplot2::theme_void() +
+    ggplot2::theme(legend.position = "bottom",
+                   legend.text = ggplot2::element_text(size = 10)) +
+    ggplot2::guides(fill = ggplot2::guide_colorbar(title.position = "right",
+                                                   title.vjust = 1,
+                                                   frame.colour = "black",
+                                                   ticks.colour = "black"))
+
+  if (isTRUE(plot_logo)) {
+
+    rlg <- ggseqlogo::ggseqlogo(group$rep, method = "prob") +
+      ggplot2::theme(axis.title.y = ggplot2::element_blank(),
+                     axis.text.y = ggplot2::element_blank(),
+                     axis.text.x = ggplot2::element_text(size = 10)) +
+      ggplot2::scale_x_continuous(breaks = seq(5, repcon_len, by = 5))
+
+    h_ <- length(unique(group$id)) / 2.5
+
+    cra <- ggpubr::ggarrange(pcr, ggplot2::ggplot() + ggplot2::theme_void(), rlg,
+                     heights = c(h_, h_/10, 0.75),
+                     nrow = 3)
+
+  } else {
+
+    cra <- pcr
+
+  }
+
+  cra
+
+}
+```
+
+# Test with example data
+## read in and merge minCED data (fix_repeats = TRUE)
+```{r}
+baseurl <- "https://raw.githubusercontent.com/acvill/CRISPRviewR/master/example_data_minced/"
+
+merged <- merge_minced(
+  s1 = read_minced(txt = url(paste0(baseurl, "s1.txt")),
+                   gff = url(paste0(baseurl, "s1.gff")),
+                   fix_repeats = TRUE),
+  s2 = read_minced(txt = url(paste0(baseurl, "s2.txt")),
+                   gff = url(paste0(baseurl, "s2.gff")),
+                   fix_repeats = TRUE),
+  s3 = read_minced(txt = url(paste0(baseurl, "s3.txt")),
+                   gff = url(paste0(baseurl, "s3.gff")),
+                   fix_repeats = TRUE),
+  s4 = read_minced(txt = url(paste0(baseurl, "s4.txt")),
+                   gff = url(paste0(baseurl, "s4.gff")),
+                   fix_repeats = TRUE),
+  s5 = read_minced(txt = url(paste0(baseurl, "s5.txt")),
+                   gff = url(paste0(baseurl, "s5.gff")),
+                   fix_repeats = TRUE)
+  )
+```
+
+## inspect the data
+```{r}
+crispr_summary(merged |> dplyr::filter(id == "s1"))
+```
+
+## group arrays and summarize groups
+```{r}
+groups <- group_arrays(merged)
+group_summary(groups) |>
+  dplyr::filter(sample_count == length(unique(merged$id))) |>
+  dplyr::select(repcon_grp) |>
+  as.vector()
+```
+
+## plot an array with seqlogo
+```{r}
+plot_arrays(group = dplyr::filter(groups, repcon_grp == 57))
+```
+
+## plot an array with numbered spacers
+```{r}
+plot_arrays(group = dplyr::filter(groups, repcon_grp == 57),
+            number_spacers = TRUE)
+```
+
+## replot with smaller cdist
+```{r}
+plot_arrays(group = dplyr::filter(groups, repcon_grp == 57),
+            cdist = 0.5, number_spacers = TRUE)
+```
+
+
