@@ -16,9 +16,9 @@
 #' @importFrom Biostrings IUPAC_CODE_MAP
 #' @importFrom Biostrings DNA_BASES
 #' @importFrom Biostrings DNAStringSet
-#' @importFrom Biostrings stringDist
-#' @importFrom Biostrings pairwiseAlignment
-#' @importFrom Biostrings score
+#' @importFrom BiocGenerics score
+#' @importFrom pwalign stringDist
+#' @importFrom pwalign pairwiseAlignment
 #' @importFrom stats hclust
 #' @importFrom stats cutree
 #' @importFrom grDevices rgb
@@ -40,40 +40,40 @@ plot_arrays <- function(group,
   asymNSM <- function(match = 1, mismatch = 0,
                       baseOnly = FALSE, type = "DNA",
                       symmetric = TRUE) {
-      "%safemult%" <- function(x, y) ifelse(is.infinite(x) & y == 0, 0, x * y)
-      type <- match.arg(type, c("DNA", "RNA"))
-      if (!S4Vectors::isSingleNumber(match) || !S4Vectors::isSingleNumber(mismatch)) {
-        stop("'match' and 'mismatch' must be non-missing numbers")
-      }
-      if (baseOnly) {
-        letters <- Biostrings::IUPAC_CODE_MAP[Biostrings::DNA_BASES]
-      }
-      else {
-        letters <- Biostrings::IUPAC_CODE_MAP
-      }
-      if (type == "RNA") {
-        names(letters) <- chartr("T", "U", names(letters))
-      }
-      nLetters <- length(letters)
-      splitLetters <- strsplit(letters, split = "")
-      submat <- matrix(0, nrow = nLetters, ncol = nLetters, dimnames = list(names(letters), names(letters)))
-      if (symmetric) {
-        for (i in 1:nLetters) {
-          for (j in i:nLetters) {
-            submat[i,j] <- submat[j,i] <- base::mean(outer(splitLetters[[i]], splitLetters[[j]], "=="))
-          }
-        }
-      }
-      else {
-        for (i in 1:nLetters) {
-          for (j in i:nLetters) {
-            submat[i,j] <- base::mean(outer(splitLetters[[i]], splitLetters[[j]], "%in%"))
-            submat[j,i] <- base::mean(outer(splitLetters[[j]], splitLetters[[i]], "%in%"))
-          }
-        }
-      }
-      abs(match) * submat - abs(mismatch) %safemult% (1 - submat)
+    "%safemult%" <- function(x, y) ifelse(is.infinite(x) & y == 0, 0, x * y)
+    type <- match.arg(type, c("DNA", "RNA"))
+    if (!S4Vectors::isSingleNumber(match) || !S4Vectors::isSingleNumber(mismatch)) {
+      stop("'match' and 'mismatch' must be non-missing numbers")
     }
+    if (baseOnly) {
+      letters <- Biostrings::IUPAC_CODE_MAP[Biostrings::DNA_BASES]
+    }
+    else {
+      letters <- Biostrings::IUPAC_CODE_MAP
+    }
+    if (type == "RNA") {
+      names(letters) <- chartr("T", "U", names(letters))
+    }
+    nLetters <- length(letters)
+    splitLetters <- strsplit(letters, split = "")
+    submat <- matrix(0, nrow = nLetters, ncol = nLetters, dimnames = list(names(letters), names(letters)))
+    if (symmetric) {
+      for (i in 1:nLetters) {
+        for (j in i:nLetters) {
+          submat[i,j] <- submat[j,i] <- base::mean(outer(splitLetters[[i]], splitLetters[[j]], "=="))
+        }
+      }
+    }
+    else {
+      for (i in 1:nLetters) {
+        for (j in i:nLetters) {
+          submat[i,j] <- base::mean(outer(splitLetters[[i]], splitLetters[[j]], "%in%"))
+          submat[j,i] <- base::mean(outer(splitLetters[[j]], splitLetters[[i]], "%in%"))
+        }
+      }
+    }
+    abs(match) * submat - abs(mismatch) %safemult% (1 - submat)
+  }
 
   # if adjusted pairwise levenshtein distance is less than cutoff ratio,
   # put spacers in same cluster
@@ -82,7 +82,7 @@ plot_arrays <- function(group,
   repcon_len <- nchar(unique(group$repcon))
   dmat <- uniq_spacers |>
     Biostrings::DNAStringSet() |>
-    Biostrings::stringDist(method = "levenshtein") / min_sp_len
+    pwalign::stringDist(method = "levenshtein") / min_sp_len
   clusters <- data.frame(spacer = uniq_spacers,
                          cluster = stats::hclust(dmat, method = "complete") |>
                            stats::cutree(h = cdist))
@@ -93,11 +93,11 @@ plot_arrays <- function(group,
 
   ## can't use asymmetric matrix with stringDist, use pairwiseAlignment instead
   group <- dplyr::mutate(group,
-                         rep_dist = Biostrings::pairwiseAlignment(pattern = rep,
-                                                                  subject = repcon,
-                                                                  substitutionMatrix = subst) |>
-                           Biostrings::score() |> abs()
-                         ) |>
+                         rep_dist = pwalign::pairwiseAlignment(pattern = rep,
+                                                               subject = repcon,
+                                                               substitutionMatrix = subst) |>
+                           BiocGenerics::score() |> abs()
+  ) |>
     dplyr::mutate(rep2con_sim = (rep_dist / nchar(repcon)) |> round(digits = 2))
 
   # get grayscale color for repeat, based on similarity to consensus repeat
@@ -148,33 +148,33 @@ plot_arrays <- function(group,
     dplyr::mutate(xfactor = (2 * x_order) - 1) |>
     dplyr::mutate(yfactor = (ymax - y_order) + 1) |>
     dplyr::mutate(xrep = purrr::map(base::strsplit(paste(xfactor,
-                                                  xfactor + 0.5,
-                                                  xfactor,
-                                                  xfactor - 0.5,
-                                                  sep = ","),
-                                            split = ","),
-                             as.numeric)) |>
+                                                         xfactor + 0.5,
+                                                         xfactor,
+                                                         xfactor - 0.5,
+                                                         sep = ","),
+                                                   split = ","),
+                                    as.numeric)) |>
     dplyr::mutate(yrep = purrr::map(base::strsplit(paste(yfactor + 0.4,
-                                                  yfactor,
-                                                  yfactor - 0.4,
-                                                  yfactor,
-                                                  sep = ","),
-                                            split = ","),
-                              as.numeric)) |>
+                                                         yfactor,
+                                                         yfactor - 0.4,
+                                                         yfactor,
+                                                         sep = ","),
+                                                   split = ","),
+                                    as.numeric)) |>
     dplyr::mutate(xspa = purrr::map(base::strsplit(paste(xfactor + 1.5,
-                                                  xfactor + 1.5,
-                                                  xfactor + 0.5,
-                                                  xfactor + 0.5,
-                                                  sep = ","),
-                                            split = ","),
-                              as.numeric)) |>
+                                                         xfactor + 1.5,
+                                                         xfactor + 0.5,
+                                                         xfactor + 0.5,
+                                                         sep = ","),
+                                                   split = ","),
+                                    as.numeric)) |>
     dplyr::mutate(yspa = purrr::map(base::strsplit(paste(yfactor + 0.4,
-                                                  yfactor - 0.4,
-                                                  yfactor - 0.4,
-                                                  yfactor + 0.4,
-                                                  sep = ","),
-                                            split = ","),
-                              as.numeric)) |>
+                                                         yfactor - 0.4,
+                                                         yfactor - 0.4,
+                                                         yfactor + 0.4,
+                                                         sep = ","),
+                                                   split = ","),
+                                    as.numeric)) |>
     tidyr::unnest(c(xrep,yrep,xspa,yspa)) |>
     dplyr::group_by(x_order, y_order) |>
     dplyr::mutate(plot_id = dplyr::cur_group_id()) |>
@@ -204,7 +204,7 @@ plot_arrays <- function(group,
                          check_overlap = TRUE,
                          size = 4,
                          color = "white")
-      )}} +
+    )}} +
     ggnewscale::new_scale_fill() +
     ggplot2::geom_polygon(mapping = ggplot2::aes(x = xrep,
                                                  y = yrep,
@@ -242,8 +242,8 @@ plot_arrays <- function(group,
     h_ <- length(unique(group$id)) / 2.5
 
     cra <- ggpubr::ggarrange(pcr, ggplot2::ggplot() + ggplot2::theme_void(), rlg,
-                     heights = c(h_, h_/10, 0.75),
-                     nrow = 3)
+                             heights = c(h_, h_/10, 0.75),
+                             nrow = 3)
 
   } else {
 

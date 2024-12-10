@@ -104,7 +104,7 @@ read_minced <- function(txt,
                           spacer = substr(x = spacer,
                                           start = ifwd + 1,
                                           stop = nchar(spacer))) |>
-            dplyr::mutate_all(na_if, "") |>
+            dplyr::mutate(dplyr::across(dplyr::where(is.character), ~ dplyr::na_if(.x,""))) |>
             dplyr::mutate(end = ifelse(test = is.na(spacer),
                                        yes = end,
                                        no = end + ifwd)) |>
@@ -121,7 +121,7 @@ read_minced <- function(txt,
                           spacer = substr(x = spacer,
                                           start = 1,
                                           stop = nchar(spacer) - irev - 1)) |>
-            dplyr::mutate_all(dplyr::na_if, "") |>
+            dplyr::mutate(dplyr::across(dplyr::where(is.character), ~ dplyr::na_if(.x,""))) |>
             dplyr::mutate(start = ifelse(test = is.na(spacer),
                                          yes = start ,
                                          no = start - irev)) |>

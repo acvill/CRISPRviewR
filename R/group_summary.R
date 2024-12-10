@@ -20,7 +20,7 @@ group_summary <- function(data) {
     dplyr::summarise(id = list(id)) |>
     dplyr::rename(sample_list = id) |>
     dplyr::mutate(sample_count = lengths(sample_list)) |>
-    dplyr::arrange(desc(sample_count)) |>
+    dplyr::arrange(dplyr::desc(sample_count)) |>
     dplyr::ungroup()
 
 }
