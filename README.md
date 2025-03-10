@@ -17,8 +17,6 @@ This package relies on the functions of other packages for data cleaning and plo
 - [ggseqlogo](https://github.com/omarwagih/ggseqlogo)
 
 ## Installation
-
-Future versions will be available on CRAN or Bioconductor. For now, you can install the development version from GitHub:
 ```
 devtools::install_github("acvill/CRISPRviewR")
 ```
